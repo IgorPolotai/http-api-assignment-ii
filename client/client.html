@@ -1,13 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <title>Our simple HTTP server</title>
+  <title>HTTP API Assignment II</title>
   <link rel="stylesheet" type="text/css" href="/style.css">
-  
+
   <script>
+
+    //Handles the response async. Parses the JSON if the method is not a HEAD
+    const handleResponse = async (response) => {
+      const content = document.querySelector('#content');
+      switch (response.status) {
+        case 200: //success
+          content.innerHTML = `<b>Success</b>`;
+          break;
+        case 201: //created
+          content.innerHTML = '<b>Created</b>';
+          break;
+        case 204: //updated (no response back from server)
+          content.innerHTML = '<b>Updated (No Content)</b>';
+          return;
+        case 400: //bad request
+          content.innerHTML = `<b>Bad Request</b>`;
+          break;
+        default: //any other status code - 404
+          content.innerHTML = `<b>Not Found</b>`;
+          break;
+      }
+
+      //Returns early if the method is a head
+      //so that the body is not parsed
+      if (response.method === "HEAD") {
+        return;
+      }
+
+      const obj = await response.json();
+
+      //If we have a message, display it.
+      if (obj.message) {
+        content.innerHTML += `<p>${"Message: " + obj.message}</p>`;
+      }
+
+      //If it is a success, set the innerHTML to the obj users
+      if (response.status === 200) {
+        content.innerHTML += `<p>${JSON.stringify(obj.users)}</p>`;
+      }
+
+      console.log(obj);
+    };
+
+    //Uses fetch to send a postRequest. 
+    const sendPost = async (nameForm) => {
+      const url = nameForm.getAttribute('action');
+      const method = nameForm.getAttribute('method');
+
+      const nameField = nameForm.querySelector('#nameField');
+      const ageField = nameForm.querySelector('#ageField');
+
+      const formData = `name=${nameField.value}&age=${ageField.value}`;
+
+      let response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: formData,
+      });
+
+      handleResponse(response);
+    };
+
+    //Uses fetch to send a getRequest.
+    //Specifically only for GET/HEAD, sets a method in the response
+    //so that if it is a HEAD, the body is not parsed
+    const sendGet = async () => {
+      const url = document.querySelector('#urlField').value;
+      const method = document.querySelector('#methodSelect').value.toUpperCase();
+
+      let response = await fetch(url, { method: method });
+      response.method = method;
+      handleResponse(response);
+    };
+
+
+    //Sets up the event listeners for all of the UI
+    const init = () => {
+      const nameForm = document.querySelector('#nameForm');
+      const userForm = document.querySelector('#userForm');
+
+      nameForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendPost(nameForm);
+      });
+
+      userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        sendGet();
+      });
+    };
+
+    window.onload = init;
 
   </script>
 </head>
+
 <body>
   <section id="top">
     <h3>POST Status Code Tests</h3>
@@ -15,7 +112,7 @@
       <label for="name">Name: </label>
       <input id="nameField" type="text" name="name" />
       <label for="age">Age: </label>
-      <input id="ageField" type="number" name="age" min="0" max="100" step="1"/>
+      <input id="ageField" type="number" name="age" min="0" max="100" step="1" />
       <input type="submit" value="Add User" />
     </form>
     <form id="userForm" action="/getUsers" method="get">
@@ -33,4 +130,5 @@
   <section id="content">
   </section>
 </body>
+
 </html>
