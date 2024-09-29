@@ -71,7 +71,7 @@ const onRequest = (request, response) => {
     } else { // If the page does not exist
         urlStruct.notFound(request, response);
     }
-};
+}; 
 
 http.createServer(onRequest).listen(port, () => {
     console.log(`Listening on 127.0.0.1: ${port}`);
